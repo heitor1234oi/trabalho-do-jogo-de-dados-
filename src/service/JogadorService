@@ -1,0 +1,78 @@
+Camada de Serviços
+
+package com.exemplo.dicegame.service;
+
+import com.exemplo.dicegame.model.Jogador;
+import com.exemplo.dicegame.repository.JogadorRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Transactional
+public class JogadorService implements UserDetailsService {
+
+    @Autowired
+    private JogadorRepository jogadorRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    // Necessário para integração com Spring Security
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Jogador jogador = jogadorRepository.findByEmailAcesso(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Jogador não encontrado: " + email));
+
+        return new org.springframework.security.core.userdetails.User(
+            jogador.getEmailAcesso(),
+            jogador.getSenhaAcesso(),
+            AuthorityUtils.createAuthorityList("ROLE_" + jogador.getNivelAcesso())
+        );
+    }
+
+    public void salvarJogador(Jogador jogador) {
+        // Lógica de criptografia de senha
+        if (jogador.getSenhaAcesso() != null && !jogador.getSenhaAcesso().isEmpty()) {
+            jogador.setSenhaAcesso(passwordEncoder.encode(jogador.getSenhaAcesso()));
+        }
+        jogadorRepository.save(jogador);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Jogador> buscarTodos() {
+        return jogadorRepository.findAll();
+    }
+    
+    @Transactional(readOnly = true)
+    public Optional<Jogador> buscarPorId(Long id) {
+        return jogadorRepository.findById(id);
+    }
+    
+    @Transactional(readOnly = true)
+    public Optional<Jogador> buscarPorEmail(String email) {
+        return jogadorRepository.findByEmailAcesso(email);
+    }
+    
+    public boolean temRodadas(Long id) {
+        return buscarPorId(id)
+               .map(j -> !j.getRodadas().isEmpty())
+               .orElse(false);
+    }
+
+    public void removerJogador(Long id) {
+        if (temRodadas(id)) {
+             throw new IllegalStateException("Jogador não pode ser removido, pois possui Rodadas associadas.");
+        }
+        jogadorRepository.deleteById(id);
+    }
+}
