@@ -1,0 +1,12 @@
+
+package com.exemplo.dicegame.repository;
+
+import com.exemplo.dicegame.model.Jogador;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository // Marca como componente de acesso a dados
+public interface JogadorRepository extends JpaRepository<Jogador, Long> {
+    // Spring Data JPA gera automaticamente a implementação para este método
+    Jogador findByEmailAcesso(String emailAcesso); // findByEmail -> findByEmailAcesso
+}
