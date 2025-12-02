@@ -1,0 +1,124 @@
+package com.exemplo.dicegame.controller;
+
+import com.exemplo.dicegame.model.Jogador;
+import com.exemplo.dicegame.model.Rodada;
+import com.exemplo.dicegame.service.JogadorService;
+import com.exemplo.dicegame.service.RodadaService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
+import java.util.Optional;
+
+@Controller
+@RequestMapping("/rodadas")
+public class RodadaController {
+
+    @Autowired
+    private RodadaService rodadaService;
+
+    @Autowired
+    private JogadorService jogadorService; 
+    
+    private String getUsuarioLogadoEmail() {
+        // Obtém o email do Jogador logado no contexto de segurança
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
+    @GetMapping("/index")
+    public String listar(ModelMap model) {
+        model.addAttribute("rodadas", rodadaService.buscarTodas());
+        // Envia o email do usuário logado para a view para checagem de permissão
+        model.addAttribute("usuarioLogadoEmail", getUsuarioLogadoEmail()); 
+        return "rodadas/index"; 
+    }
+
+    @GetMapping("/nova")
+    public String preSalvar(Rodada rodada, ModelMap model) {
+        model.addAttribute("jogadores", jogadorService.buscarTodos());
+        return "rodadas/nova";
+    }
+
+    @PostMapping("/criar")
+    public String salvar(@Valid Rodada rodada, BindingResult result, RedirectAttributes attr, ModelMap model) {
+        if (result.hasErrors()) {
+            model.addAttribute("jogadores", jogadorService.buscarTodos());
+            return "rodadas/nova";
+        }
+        
+        rodadaService.salvar(rodada, getUsuarioLogadoEmail());
+        attr.addFlashAttribute("sucesso", "Rodada criada com sucesso!");
+        return "redirect:/rodadas/index";
+    }
+
+    @GetMapping("/editar/{id}")
+    public String preEditar(@PathVariable("id") Long id, ModelMap model, RedirectAttributes attr) {
+        Optional<Rodada> rodadaOpt = rodadaService.buscarPorId(id);
+        if (rodadaOpt.isEmpty()) {
+            attr.addFlashAttribute("erro", "Rodada não encontrada.");
+            return "redirect:/rodadas/index";
+        }
+        
+        Rodada rodada = rodadaOpt.get();
+        // Checagem de propriedade antes de carregar o formulário
+        if (!rodada.getJogador().getEmailAcesso().equals(getUsuarioLogadoEmail())) {
+             attr.addFlashAttribute("erro", "Você não tem permissão para editar esta rodada.");
+             return "redirect:/rodadas/index";
+        }
+        
+        model.addAttribute("rodada", rodada);
+        model.addAttribute("jogadores", jogadorService.buscarTodos());
+        return "rodadas/editar";
+    }
+
+    @PutMapping("/atualizar/{id}")
+    public String atualizar(@PathVariable("id") Long id, @Valid Rodada rodada, BindingResult result, RedirectAttributes attr, ModelMap model) {
+        if (result.hasErrors()) {
+            model.addAttribute("jogadores", jogadorService.buscarTodos());
+            return "rodadas/editar";
+        }
+
+        try {
+            // Passa o ID da rodada, os dados do formulário e o email do dono para verificação
+            rodadaService.atualizar(rodada, id, getUsuarioLogadoEmail());
+            attr.addFlashAttribute("sucesso", "Rodada atualizada com sucesso!");
+        } catch (SecurityException | IllegalStateException e) {
+             attr.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/rodadas/index";
+    }
+
+    @DeleteMapping("/excluir/{id}")
+    public String excluir(@PathVariable("id") Long id, RedirectAttributes attr) {
+        try {
+            rodadaService.remover(id, getUsuarioLogadoEmail());
+            attr.addFlashAttribute("sucesso", "Rodada removida com sucesso!");
+        } catch (SecurityException e) {
+            attr.addFlashAttribute("erro", e.getMessage());
+        } catch (IllegalArgumentException e) {
+             attr.addFlashAttribute("erro", "Rodada não encontrada.");
+        }
+        return "redirect:/rodadas/index";
+    }
+    
+    // Endpoint para finalizar e rolar o dado
+    @PostMapping("/finalizar/{id}")
+    public String finalizarRodada(@PathVariable("id") Long id, RedirectAttributes attr) {
+        try {
+            Rodada rodadaFinalizada = rodadaService.finalizarRodada(id, getUsuarioLogadoEmail());
+            attr.addFlashAttribute("sucesso", 
+                "Rodada Finalizada! O resultado do dado foi: " + rodadaFinalizada.getResultadoDado());
+        } catch (SecurityException | IllegalStateException e) {
+            attr.addFlashAttribute("erro", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            attr.addFlashAttribute("erro", "Rodada não encontrada.");
+        }
+        return "redirect:/rodadas/index";
+    }
+}
