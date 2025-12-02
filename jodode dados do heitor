@@ -1,0 +1,24 @@
+O código é dividido em camadas que conversam entre si, como um time:
+
+Modelos (Model): Definem os dados. Temos o Jogador (o usuário) e a Rodada (a aposta). Eles se ligam diretamente ao banco de dados.
+
+Repositórios (Repository): A forma mais simples de acessar o banco de dados. O Spring faz o trabalho de criar automaticamente as funções de salvar, buscar e deletar (CRUD).
+
+Serviços (Service): Onde as regras do jogo acontecem. É o cérebro que decide:
+
+Como salvar um Jogador (criptografando a senha).
+
+Como finalizar aposta (rolando o dado e gerando o resultadoDado).
+
+Se o usuário tem permissão para editar/deletar a Rodada (verificando se ele é o dono).
+
+Controladores (Controller): A ponte entre o navegador e o Serviço. Eles recebem os cliques e formulários (usando Thymeleaf para mostrar as páginas) e chamam o Serviço para executar a ação.
+Segurança e Regras
+Propriedade e Edição: Uma regra crucial é que apenas o Jogador dono da Rodada pode editá-la ou deletá-la. Isso é verificado na camada Service.
+
+Vencedor: O dono da aposta tem um botão para "Finalizar Rodada". Ao clicar, o sistema rola o dado (gera um número de 1 a 6) e registra o resultadoDado na aposta.
+
+Login: O Spring Security cuida do login, garante que a senha seja criptografada (BCrypt) e que as páginas de gestão só possam ser acessadas por usuários logados.
+
+Em resumo, o código utiliza as ferramentas mais modernas do Spring para ter uma estrutura clara e eficiente, implementando todas as regras de controle de acesso e a lógica básica do jogo de dados.
+
