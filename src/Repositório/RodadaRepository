@@ -1,0 +1,10 @@
+package com.exemplo.dicegame.repository;
+
+import com.exemplo.dicegame.model.Rodada;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface RodadaRepository extends JpaRepository<Rodada, Long> {
+    // Métodos CRUD básicos herdados: save, findById, findAll, deleteById, etc.
+}
