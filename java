@@ -1,0 +1,60 @@
+Java
+
+package com.exemplo.dicegame.model;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "rodada")
+public class Rodada implements Serializable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "O Título da Rodada é obrigatório.")
+    @Size(max = 60, message = "O Título deve ter no máximo 60 caracteres.")
+    @Column(nullable = false, length = 60)
+    private String tituloRodada;
+
+    @NotNull(message = "O Valor da Aposta é obrigatório.")
+    @Column(nullable = false)
+    private Double valorAposta; // Novo campo: Valor apostado
+
+    @Column(nullable = true)
+    private Integer resultadoDado; // O resultado do dado (1 a 6)
+
+    @Column(nullable = false)
+    private Boolean finalizada = false; // Status da rodada
+
+    @Column(nullable = false)
+    private LocalDateTime dataCriacao = LocalDateTime.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "jogador_id", nullable = false)
+    private Jogador jogador; // Dono da Rodada (Aposta)
+
+    // Construtores, Getters e Setters (Essenciais para o JPA/Thymeleaf)
+    
+    // Getters e Setters omitidos para brevidade, mas devem ser incluídos.
+    // Exemplo:
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getTituloRodada() { return tituloRodada; }
+    public void setTituloRodada(String tituloRodada) { this.tituloRodada = tituloRodada; }
+    public Integer getResultadoDado() { return resultadoDado; }
+    public void setResultadoDado(Integer resultadoDado) { this.resultadoDado = resultadoDado; }
+    public Boolean getFinalizada() { return finalizada; }
+    public void setFinalizada(Boolean finalizada) { this.finalizada = finalizada; }
+    public Double getValorAposta() { return valorAposta; }
+    public void setValorAposta(Double valorAposta) { this.valorAposta = valorAposta; }
+    public Jogador getJogador() { return jogador; }
+    public void setJogador(Jogador jogador) { this.jogador = jogador; }
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
+}
