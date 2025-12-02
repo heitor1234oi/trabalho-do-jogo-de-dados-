@@ -1,0 +1,105 @@
+package com.exemplo.dicegame.service;
+
+import com.exemplo.dicegame.model.Jogador;
+import com.exemplo.dicegame.model.Rodada;
+import com.exemplo.dicegame.repository.RodadaRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+
+@Service
+@Transactional
+public class RodadaService {
+
+    @Autowired
+    private RodadaRepository rodadaRepository;
+
+    @Autowired
+    private JogadorService jogadorService;
+
+    public Rodada salvar(Rodada rodada, String emailDono) {
+        // 1. Define o dono da Rodada
+        Jogador dono = jogadorService.buscarPorEmail(emailDono)
+            .orElseThrow(() -> new UsernameNotFoundException("Jogador não encontrado."));
+        
+        rodada.setJogador(dono);
+        rodada.setFinalizada(false);
+        rodada.setResultadoDado(null);
+        
+        return rodadaRepository.save(rodada);
+    }
+    
+    public Rodada atualizar(Rodada rodada, Long idRodada, String emailDono) {
+        Rodada existente = buscarPorId(idRodada)
+            .orElseThrow(() -> new IllegalArgumentException("Rodada não encontrada."));
+        
+        // 2. Verifica se o usuário logado é o dono
+        if (!existente.getJogador().getEmailAcesso().equals(emailDono)) {
+            throw new SecurityException("Você não tem permissão para editar esta rodada.");
+        }
+        
+        // 3. Apenas permite edição se não estiver finalizada
+        if (existente.getFinalizada()) {
+            throw new IllegalStateException("Rodada já finalizada e não pode ser editada.");
+        }
+
+        existente.setTituloRodada(rodada.getTituloRodada());
+        existente.setValorAposta(rodada.getValorAposta());
+
+        return rodadaRepository.save(existente);
+    }
+
+    public void remover(Long idRodada, String emailDono) {
+        Rodada rodada = buscarPorId(idRodada)
+            .orElseThrow(() -> new IllegalArgumentException("Rodada não encontrada."));
+
+        // 4. Verifica se o usuário logado é o dono antes de deletar
+        if (!rodada.getJogador().getEmailAcesso().equals(emailDono)) {
+            throw new SecurityException("Você não tem permissão para deletar esta rodada.");
+        }
+        
+        rodadaRepository.deleteById(idRodada);
+    }
+
+    /**
+     * Lógica principal: Rola o dado e finaliza a rodada.
+     */
+    public Rodada finalizarRodada(Long idRodada, String emailDono) {
+        Rodada rodada = buscarPorId(idRodada)
+            .orElseThrow(() -> new IllegalArgumentException("Rodada não encontrada."));
+
+        // 5. Verifica se o usuário logado é o dono antes de finalizar
+        if (!rodada.getJogador().getEmailAcesso().equals(emailDono)) {
+            throw new SecurityException("Você não tem permissão para finalizar esta rodada.");
+        }
+        
+        if (rodada.getFinalizada()) {
+             throw new IllegalStateException("Rodada já foi finalizada.");
+        }
+
+        // 6. Rola o dado (1 a 6)
+        Random random = new Random();
+        int resultado = random.nextInt(6) + 1; 
+
+        // 7. Atualiza status e resultado
+        rodada.setResultadoDado(resultado);
+        rodada.setFinalizada(true);
+
+        return rodadaRepository.save(rodada);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Rodada> buscarPorId(Long id) {
+        return rodadaRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Rodada> buscarTodas() {
+        return rodadaRepository.findAll();
+    }
+}
