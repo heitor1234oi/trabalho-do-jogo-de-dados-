@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Jogo de Dados</title>
+    <style>
+        body { font-family: sans-serif; margin: 50px; }
+        .login-container { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; padding: 14px 20px; margin: 8px 0; border: none; cursor: pointer; width: 100%; }
+        .error { color: red; }
+        .logout-success { color: green; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Acesso ao Jogo de Dados</h2>
+
+    <div th:if="${param.error}" class="error">
+        Usuário ou senha inválidos.
+    </div>
+
+    <div th:if="${param.logout}" class="logout-success">
+        Logout realizado com sucesso.
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        
+        <label for="username">Email de Acesso:</label>
+        <input type="text" id="username" name="username" placeholder="Digite seu email" required autofocus/>
+
+        <label for="password">Senha:</label>
+        <input type="password" id="password" name="password" placeholder="Digite sua senha" required/>
+
+        <button type="submit">Entrar</button>
+    </form>
+    
+    <p style="margin-top: 20px; text-align: center;">
+        Ainda não tem conta? 
+        <a th:href="@{/jogadores/novo}">Cadastre-se aqui</a>
+    </p>
+</div>
+
+</body>
+</html>
