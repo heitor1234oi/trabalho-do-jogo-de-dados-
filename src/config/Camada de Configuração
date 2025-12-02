@@ -1,0 +1,50 @@
+package com.exemplo.dicegame.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    // Configura o BCrypt para criptografia de senhas
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    // Define as regras de autorização e o formulário de login
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(requests -> requests
+                // Rotas que qualquer um pode acessar (incluindo estáticos e login)
+                .requestMatchers("/", "/home", "/login", "/jogadores/novo", "/jogadores/criar", "/static/**").permitAll()
+                
+                // Rotas que exigem a role USER (ou superior)
+                .requestMatchers("/jogadores/**", "/rodadas/**").hasRole("USER") 
+                
+                // Qualquer outra requisição deve ser autenticada
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")        // Rota para a página de login
+                .defaultSuccessUrl("/", true) // Redireciona para a home após sucesso
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutSuccessUrl("/login?logout") // Redireciona para login após logout
+                .permitAll()
+            );
+            
+        // NOTA: Em produção, você deve reativar e configurar o CSRF. 
+        http.csrf(csrf -> csrf.disable()); 
+
+        return http.build();
+    }
+}
