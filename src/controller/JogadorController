@@ -1,0 +1,63 @@
+package com.exemplo.dicegame.controller;
+
+import com.exemplo.dicegame.model.Jogador;
+import com.exemplo.dicegame.service.JogadorService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/jogadores")
+public class JogadorController {
+
+    @Autowired
+    private JogadorService jogadorService;
+
+    @GetMapping("/index")
+    public String listar(ModelMap model) {
+        model.addAttribute("jogadores", jogadorService.buscarTodos());
+        return "jogadores/index"; 
+    }
+
+    @GetMapping("/novo")
+    public String preSalvar(Jogador jogador) {
+        return "jogadores/novo";
+    }
+
+    @PostMapping("/criar")
+    public String salvar(@Valid Jogador jogador, BindingResult result, RedirectAttributes attr) {
+        if (result.hasErrors()) {
+            return "jogadores/novo";
+        }
+        
+        // Validação de senha customizada
+        if (jogador.getSenhaAcesso() != null && 
+            (jogador.getSenhaAcesso().length() < 8 || 
+             jogador.getSenhaAcesso().length() > 20)) {
+            result.rejectValue("senhaAcesso", "error.senha", 
+                "A senha deve ter entre 8 e 20 caracteres.");
+            return "jogadores/novo";
+        }
+
+        jogadorService.salvarJogador(jogador);
+        attr.addFlashAttribute("sucesso", "Jogador salvo com sucesso!");
+        return "redirect:/jogadores/index";
+    }
+
+    @DeleteMapping("/excluir/{id}")
+    public String excluir(@PathVariable("id") Long id, RedirectAttributes attr) {
+        try {
+            jogadorService.removerJogador(id);
+            attr.addFlashAttribute("sucesso", "Jogador removido com sucesso!");
+        } catch (IllegalStateException e) {
+            attr.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/jogadores/index";
+    }
+    
+    // NOTA: Os métodos editar, atualizar e show devem ser adicionados.
+}
